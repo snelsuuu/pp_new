@@ -1,5 +1,8 @@
 # Path Planning Upgrade — Formula Bharat Driverless Cup
 
+> **How to use this file:** Paste the ENTIRE file at the start of every Claude session,
+> along with any code/errors relevant to the day. At the end of each session, ask Claude
+> to write the day's log entry, paste it into the Session Log below, and commit.
 
 ---
 
@@ -70,6 +73,21 @@ matching, controller/MPC changes. (Listed as future work in report.)
 ## 7. Session Log
 
 _(Newest first. One short entry per session: what was done, what was decided, what broke.)_
+
+### 2026-07-06 — Day 1 (offline prototype, cells 1–3)
+- Built offline harness: Cell 1 (fake tracks), Cell 2 (Delaunay + blue-yellow
+  filter + midpoints), Cell 3 (greedy NN vs triangle-walk, side by side).
+- **Key finding:** greedy's failure depends on the ratio of MAX_HOP (7 m) to
+  hairpin leg spacing. On the WIDE default hairpin (legs ~9 m > 7 m hop), greedy
+  does NOT cut across — the hop leash saves it, so both planners look identical.
+  On a TIGHT hairpin (radius 2.5, legs ~5 m < 7 m hop), greedy clearly jumps the
+  infield and skips the top bend. Lesson: our benchmark tracks MUST include a
+  hairpin with leg spacing < 7 m or we won't reproduce the real failure.
+- **Open bug:** triangle-walk output looks too short / barely visible on the
+  tight hairpin — termination logic likely stops early when midpoints are dense.
+  Investigate next session (make triangle-walk actually complete the loop).
+- **Next session goal:** debug triangle-walk termination on tight hairpin; get it
+  to trace the full centerline including the top bend, then overlay cleanly vs greedy.
 
 ### 2026-07-06 — Day 0 (kickoff)
 - Reviewed current planner node end-to-end; identified issues listed in §2.
