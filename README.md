@@ -74,6 +74,28 @@ All planners comfortably fit a 20 Hz replanning budget.
   v2's heading-aware chain recovered most of that safety while raising
   success further.
 
+### Negative results (v3 experiments)
+
+Two candidate-filtering ideas were benchmarked and rejected:
+
+- **Neighbour-vote colour fix** (flip a cone whose two nearest cones are
+  both the opposite colour): catastrophic under degradation
+  (overall 0.85 → 0.59, clean laps broken). The geometric margin between
+  nearest-opposite (median 3.50 m) and nearest-same (3.69 m) cone
+  distances is only 0.19 m, so position noise makes the vote unreliable;
+  a min-distance-to-cone veto additionally deleted true centerline
+  candidates near phantom cones.
+- **Conservative corridor check** (reject candidates whose nearest blue
+  and yellow cones lie clearly on the same side): exactly zero effect —
+  identical success rate, identical failure counts over 300 laps. The
+  heading-aware chain already refuses the candidates this filter
+  removes. Dropped to avoid dead code.
+
+Likely next direction for the remaining off-track failures: temporal
+smoothing (penalise frame-to-frame path jumps), since a single-frame
+planner cannot detect that its path suddenly veered relative to the
+previous frame.
+
 ## Repo layout
 
 ```
@@ -96,6 +118,9 @@ python -m sim.benchmark             # full stress matrix (~10-20 min)
 
 - [x] Baseline port + closed-loop benchmark
 - [x] v1: sparse-map robustness
-- [x] v2: heading-aware cost chain
-- [ ] v3: colour-consistency check / temporal smoothing (TBD from data)
-- [ ] ROS2 node wrapping the winning planner
+- [x] v2: heading-aware cost chain  ← **shipped planner**
+- [x] v3 experiments: colour fix + corridor filter (rejected, see negative results)
+- [x] ROS2 node wrapping v2 (`ros2_node/slam_path_planner.py`)
+- [ ] Temporal smoothing (v4 candidate)
+- [ ] On-car / simulator validation
+
