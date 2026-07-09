@@ -95,7 +95,40 @@ Likely next direction for the remaining off-track failures: temporal
 smoothing (penalise frame-to-frame path jumps), since a single-frame
 planner cannot detect that its path suddenly veered relative to the
 previous frame.
+## Live simulation validation (EUFS Sim)
 
+The winning planner (v2) was validated end-to-end on EUFS Sim
+(Ubuntu 20.04 / ROS 2 Galactic / Gazebo 11), driving a simulated car in
+closed loop.
+
+Pipeline: EUFS publishes car-local ground-truth cones on
+`/ground_truth/cones` → `ros2_node/eufs_adapter.py` (feeds them to the
+planner with car pose at the origin, optionally applies live cone
+dropout/noise) → `/path_points` → `ros2_node/pure_pursuit.py`
+(pure-pursuit follower) → `/cmd` drives the car.
+
+Result on `small_track`, identical follower, identical live cone dropout:
+
+| planner  | clean map | 40% cone dropout: time-on-track before leaving |
+|----------|-----------|------------------------------------------------|
+| baseline | drives ok | ~16 s                                          |
+| v2       | drives ok | ~25 s                                          |
+
+Under 40% dropout, v2 held the track ~56% longer than baseline before
+departing (see `media/`). This directionally matches the offline
+benchmark (v2 far more robust to dropout), now confirmed on a simulated
+vehicle rather than only the kinematic point-follower.
+
+Run (EUFS sim already launched on small_track):
+
+    python3 ros2_node/eufs_adapter.py --ros-args -p planner:=v2 -p use_sim_time:=true
+    python3 ros2_node/pure_pursuit.py --ros-args -p use_sim_time:=true -p speed:=1.5 -p lookahead:=5.0
+
+Add `-p degrade.drop_rate:=0.40` to the adapter to reproduce the stress test.
+
+Note: EUFS `/ground_truth/cones` are car-local, so the adapter passes the
+planner a (0,0,0) car pose (the FOV transform becomes identity) and
+publishes the path in `base_footprint`.
 ## Repo layout
 
 ```
